@@ -1,0 +1,29 @@
+from dnslib.server import DNSServer, BaseResolver
+from dnslib import RR, QTYPE, A
+import base64
+
+class TunnelResolver(BaseResolver):
+    def resolve(self, request, handler):
+        qname = request.q.qname
+        domain = str(qname)
+
+        try:
+            data_part = domain.split(".")[0]
+            decoded = base64.b64decode(data_part).decode()
+            print("[+] Received Data:", decoded)
+        except:
+            pass
+
+        reply = request.reply()
+        reply.add_answer(RR(qname, QTYPE.A, rdata=A("1.2.3.4"), ttl=60))
+        return reply
+
+resolver = TunnelResolver()
+server = DNSServer(resolver, port=5353, address="0.0.0.0")
+
+print("[*] DNS Tunnel Server Started...")
+server.start_thread()
+
+import time
+while True:
+    time.sleep(1)
